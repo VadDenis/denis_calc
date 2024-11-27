@@ -1,0 +1,44 @@
+{{define "title"}}Элвент: Калькулятор{{end}}
+
+{{define "body"}}
+<div x-data="{
+    filterType: '',
+    cleaningClass: '',
+    types: [],
+    classes: [],
+    
+    async loadData() {
+        const typesResp = await fetch('/api/collections/filter_type/records');
+        this.types = (await typesResp.json()).items;
+        
+        const classesResp = await fetch('/api/collections/filter_cleaning_class/records');
+        this.classes = (await classesResp.json()).items;
+    }
+}" x-init="loadData">
+
+    <h1>Калькулятор фильтров</h1>
+    
+    <form>
+        <label>
+            Тип фильтра:
+            <select x-model="filterType">
+                <option value="">Выберите тип</option>
+                <template x-for="type in types">
+                    <option :value="type.id" x-text="type.name"></option>
+                </template>
+            </select>
+        </label>
+
+        <label>
+            Класс очистки:
+            <select x-model="cleaningClass">
+                <option value="">Выберите класс</option>
+                <template x-for="class in classes">
+                    <option :value="class.id" x-text="class.name"></option>
+                </template>
+            </select>
+        </label>
+    </form>
+
+</div>
+{{end}}
