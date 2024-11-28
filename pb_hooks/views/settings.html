@@ -3,12 +3,18 @@
 {{define "body"}}
 <h1>Настройки</h1>
 
+<!-- Добавляем общий контейнер с состоянием activeTable -->
 <div x-data="{
+  activeTable: new URLSearchParams(window.location.search).get('tab') || 'cleaning',
   items: [],
   showAddForm: false,
   showEditForm: false,
   currentItem: null,
   formData: {
+    name: ''
+  },
+  editData: {
+    id: null,
     name: ''
   },
 
@@ -83,206 +89,256 @@
     } catch (err) {
       alert('Ошибка при удалении');
     }
-  }
-}" x-init="loadItems">
-<h2>Класс очистки</h2>
-
-  <!-- Таблица данных класса очистки -->
-  <table role="grid">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Класс очистки</th>
-        <th>Создано</th>
-        <th>Обновлено</th>
-        <th>Действия</th>
-      </tr>
-    </thead>
-    <tbody>
-      <template x-for="item in items" :key="item.id">
-        <tr>
-          <td x-text="item.id"></td>
-          <td x-text="item.name"></td>
-          <td x-text="new Date(item.created).toLocaleString()"></td>
-          <td x-text="new Date(item.updated).toLocaleString()"></td>
-          <td>
-            <button class="outline" @click="editItem(item)">Изменить</button>
-            <button class="outline secondary" @click="deleteItem(item.id)">Удалить</button>
-          </td>
-        </tr>
-      </template>
-    </tbody>
-  </table>
-
-  <button class="primary" @click="showAddForm = true">Добавить класс очистки</button>
-
-  <!-- Модальное окно добавления класса очистки -->
-  <dialog :open="showAddForm">
-    <article>
-      <header>
-        <h3>Добавление класса очистки</h3>
-      </header>
-      <form @submit.prevent="addItem">
-        <label>
-          класс очистки
-          <input type="text" x-model="formData.name" required>
-        </label>
-        <footer style="display: flex; flex-direction: column; gap: 0.5rem;">
-          <button type="submit" style="width: 100%;">Добавить</button>
-          <button type="button" class="secondary" @click="showAddForm = false" style="width: 100%;">Отмена</button>
-        </footer>
-      </form>
-    </article>
-  </dialog>
-
-  <!-- Модальное окно редактирования класса очистки -->
-  <dialog :open="showEditForm">
-    <article>
-      <header>
-        <h3>Редактирование класса очистки</h3>
-      </header>
-      <form @submit.prevent="updateItem">
-        <label>
-          Класс очистки
-          <input type="text" x-model="formData.name" required>
-        </label>
-        <footer style="display: flex; flex-direction: column; gap: 0.5rem;">
-          <button type="submit" style="width: 100%;">Изменить</button>
-          <button type="button" class="secondary" @click="showEditForm = false" style="width: 100%;">Отмена</button>
-        </footer>
-      </form>
-    </article>
-  </dialog>
-
-</div>
-
-<!-- Таблица filter_type -->
-<div x-data="{
-  items: [],
-  showAddForm: false,
-  showEditForm: false,
-  formData: {
-    name: ''
-  },
-  editData: {
-    id: null,
-    name: ''
-  },
-  
-  async loadItems() {
-    const response = await fetch('/api/collections/filter_type/records');
-    const data = await response.json();
-    this.items = data.items;
   },
 
-  async addItem() {
-    await fetch('/api/collections/filter_type/records', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(this.formData)
-    });
-    this.showAddForm = false;
-    this.formData.name = '';
-    await this.loadItems();
-  },
-
-  async deleteItem(id) {
-    if (confirm('Удалить запись?')) {
-      await fetch(`/api/collections/filter_type/records/${id}`, {
-        method: 'DELETE'
-      });
-      await this.loadItems();
-    }
-  },
-
-  editItem(item) {
-    this.editData.id = item.id;
-    this.editData.name = item.name;
-    this.showEditForm = true;
-  },
-
-  async updateItem() {
-    await fetch(`/api/collections/filter_type/records/${this.editData.id}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        name: this.editData.name
-      })
-    });
-    this.showEditForm = false;
-    this.editData = { id: null, name: '' };
-    await this.loadItems();
+  switchTab(tabName) {
+    this.activeTable = tabName;
+    // Обновляем URL при переключении
+    const url = new URL(window.location);
+    url.searchParams.set('tab', tabName);
+    history.pushState({}, '', url);
   }
 }" x-init="loadItems">
 
-  <h2>Типы фильтров</h2>
-  
-  <table>
-    <thead>
-      <tr>
-        <th>Название</th>
-        <th>Создано</th>
-        <th>Обновлено</th>
-        <th>Действия</th>
-      </tr>
-    </thead>
-    <tbody>
-      <template x-for="item in items">
+  <!-- Навигационное меню -->
+  <div class="tabs" style="margin-bottom: 2rem;">
+    <button 
+      :class="{ 'active': activeTable === 'cleaning' }"
+      @click="switchTab('cleaning')"
+    >
+      Классы очистки
+    </button>
+    <button 
+      :class="{ 'active': activeTable === 'types' }"
+      @click="switchTab('types')"
+    >
+      Типы фильтров
+    </button>
+  </div>
+
+  <!-- Таблица классов очистки -->
+  <div x-show="activeTable === 'cleaning'">
+    <h2>Класс очистки</h2>
+
+    <!-- Таблица данных класса очистки -->
+    <table role="grid">
+      <thead>
         <tr>
-          <td x-text="item.name"></td>
-          <td x-text="new Date(item.created).toLocaleString()"></td>
-          <td x-text="new Date(item.updated).toLocaleString()"></td>
-          <td>
-            <button class="outline" @click="editItem(item)">Изменить</button>
-            <button class="outline secondary" @click="deleteItem(item.id)">Удалить</button>
-          </td>
+          <th>ID</th>
+          <th>Класс очистки</th>
+          <th>Создано</th>
+          <th>Обновлено</th>
+          <th>Действия</th>
         </tr>
-      </template>
-    </tbody>
-  </table>
+      </thead>
+      <tbody>
+        <template x-for="item in items" :key="item.id">
+          <tr>
+            <td x-text="item.id"></td>
+            <td x-text="item.name"></td>
+            <td x-text="new Date(item.created).toLocaleString()"></td>
+            <td x-text="new Date(item.updated).toLocaleString()"></td>
+            <td>
+              <button class="outline" @click="editItem(item)">Изменить</button>
+              <button class="outline secondary" @click="deleteItem(item.id)">Удалить</button>
+            </td>
+          </tr>
+        </template>
+      </tbody>
+    </table>
 
-  <button class="primary" @click="showAddForm = true">Добавить тип фильтра</button>
+    <button class="primary" @click="showAddForm = true">Добавить класс очистки</button>
 
-  <!-- Модальное окно добавления типа фильтров -->
-  <dialog :open="showAddForm">
-    <article>
-      <header>
-        <h3>Добавить тип фильтра</h3>
-      </header>
-      <form @submit.prevent="addItem">
-        <label>
-          Тип фильтра
-          <input type="text" x-model="formData.name" required>
-        </label>
-        <footer style="display: flex; flex-direction: column; gap: 0.5rem;">
-          <button type="submit" style="width: 100%;">Добавить</button>
-          <button type="button" class="secondary" @click="showAddForm = false" style="width: 100%;">Отмена</button>
-        </footer>
-      </form>
-    </article>
-  </dialog>
+    <!-- Модальное окно добавления класса очистки -->
+    <dialog :open="showAddForm">
+      <article>
+        <header>
+          <h3>Добавление класса очистки</h3>
+        </header>
+        <form @submit.prevent="addItem">
+          <label>
+            класс очистки
+            <input type="text" x-model="formData.name" required>
+          </label>
+          <footer style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <button type="submit" style="width: 100%;">Добавить</button>
+            <button type="button" class="secondary" @click="showAddForm = false" style="width: 100%;">Отмена</button>
+          </footer>
+        </form>
+      </article>
+    </dialog>
 
-  <!-- Модальное окно редактирования типа фильтра -->
-  <dialog :open="showEditForm">
-    <article>
-      <header>
-        <h3>Изменения типа фильтра</h3>
-      </header>
-      <form @submit.prevent="updateItem">
-        <label>
-          Тип фильтра
-          <input type="text" x-model="editData.name" required>
-        </label>
-        <footer style="display: flex; flex-direction: column; gap: 0.5rem;">
-          <button type="submit" style="width: 100%;">Изменить</button>
-          <button type="button" class="secondary" @click="showEditForm = false" style="width: 100%;">Отмена</button>
-        </footer>
-      </form>
-    </article>
-  </dialog>
+    <!-- Модальное окно редактирования класса очистки -->
+    <dialog :open="showEditForm">
+      <article>
+        <header>
+          <h3>Редактирование класса очистки</h3>
+        </header>
+        <form @submit.prevent="updateItem">
+          <label>
+            Класс очистки
+            <input type="text" x-model="formData.name" required>
+          </label>
+          <footer style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <button type="submit" style="width: 100%;">Изменить</button>
+            <button type="button" class="secondary" @click="showEditForm = false" style="width: 100%;">Отмена</button>
+          </footer>
+        </form>
+      </article>
+    </dialog>
+  </div>
+
+  <!-- Таблица типов фильтров -->
+  <div x-show="activeTable === 'types'">
+    <div x-data="{
+      items: [],
+      showAddForm: false,
+      showEditForm: false,
+      formData: {
+        name: ''
+      },
+      editData: {
+        id: null,
+        name: ''
+      },
+      
+      async loadItems() {
+        const response = await fetch('/api/collections/filter_type/records');
+        const data = await response.json();
+        this.items = data.items;
+      },
+
+      async addItem() {
+        await fetch('/api/collections/filter_type/records', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(this.formData)
+        });
+        this.showAddForm = false;
+        this.formData.name = '';
+        await this.loadItems();
+      },
+
+      async deleteItem(id) {
+        if (confirm('Удалить запись?')) {
+          await fetch(`/api/collections/filter_type/records/${id}`, {
+            method: 'DELETE'
+          });
+          await this.loadItems();
+        }
+      },
+
+      editItem(item) {
+        this.editData.id = item.id;
+        this.editData.name = item.name;
+        this.showEditForm = true;
+      },
+
+      async updateItem() {
+        await fetch(`/api/collections/filter_type/records/${this.editData.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            name: this.editData.name
+          })
+        });
+        this.showEditForm = false;
+        this.editData = { id: null, name: '' };
+        await this.loadItems();
+      }
+    }" x-init="loadItems">
+
+      <h2>Типы фильтров</h2>
+      
+      <table>
+        <thead>
+          <tr>
+            <th>Название</th>
+            <th>Создано</th>
+            <th>Обновлено</th>
+            <th>Действия</th>
+          </tr>
+        </thead>
+        <tbody>
+          <template x-for="item in items">
+            <tr>
+              <td x-text="item.name"></td>
+              <td x-text="new Date(item.created).toLocaleString()"></td>
+              <td x-text="new Date(item.updated).toLocaleString()"></td>
+              <td>
+                <button class="outline" @click="editItem(item)">Изменить</button>
+                <button class="outline secondary" @click="deleteItem(item.id)">Удалить</button>
+              </td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+
+      <button class="primary" @click="showAddForm = true">Добавить тип фильтра</button>
+
+      <!-- Модальное окно добавления типа фильтров -->
+      <dialog :open="showAddForm">
+        <article>
+          <header>
+            <h3>Добавить тип фильтра</h3>
+          </header>
+          <form @submit.prevent="addItem">
+            <label>
+              Тип фильтра
+              <input type="text" x-model="formData.name" required>
+            </label>
+            <footer style="display: flex; flex-direction: column; gap: 0.5rem;">
+              <button type="submit" style="width: 100%;">Добавить</button>
+              <button type="button" class="secondary" @click="showAddForm = false" style="width: 100%;">Отмена</button>
+            </footer>
+          </form>
+        </article>
+      </dialog>
+
+      <!-- Модальное окно редактирования типа фильтра -->
+      <dialog :open="showEditForm">
+        <article>
+          <header>
+            <h3>Изменения типа фильтра</h3>
+          </header>
+          <form @submit.prevent="updateItem">
+            <label>
+              Тип фильтра
+              <input type="text" x-model="editData.name" required>
+            </label>
+            <footer style="display: flex; flex-direction: column; gap: 0.5rem;">
+              <button type="submit" style="width: 100%;">Изменить</button>
+              <button type="button" class="secondary" @click="showEditForm = false" style="width: 100%;">Отмена</button>
+            </footer>
+          </form>
+        </article>
+      </dialog>
+    </div>
+  </div>
+
 </div>
+
+<style>
+.tabs {
+  display: flex;
+  gap: 1rem;
+}
+
+.tabs button {
+  padding: 0.5rem 1rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.tabs button.active {
+  border-bottom: 2px solid var(--primary);
+  font-weight: bold;
+}
+</style>
+
 {{end}}
