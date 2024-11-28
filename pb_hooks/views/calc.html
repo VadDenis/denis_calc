@@ -6,6 +6,14 @@
     cleaningClass: '',
     types: [],
     classes: [],
+    width: 0,
+    height: 0,
+    pocketLength: 0,
+    numberOfPockets: 0,
+    numberOfFilters: 1,
+    sealer: false,
+    coefficient: 1,
+    comment: '',
     
     async loadData() {
         const typesResp = await fetch('/api/collections/filter_type/records');
@@ -19,26 +27,151 @@
     <h1>Калькулятор фильтров</h1>
     
     <form>
-        <label>
-            Тип фильтра:
-            <select x-model="filterType">
-                <option value="">Выберите тип</option>
-                <template x-for="type in types">
-                    <option :value="type.id" x-text="type.name"></option>
-                </template>
-            </select>
-        </label>
+        <!-- Первая строка - основные параметры -->
+        <div class="form-grid">
+            <div class="form-column">
+                <div class="form-group">
+                    <label>
+                        Тип фильтра:
+                        <select x-model="filterType" required>
+                            <option value="">Выберите тип</option>
+                            <template x-for="type in types">
+                                <option :value="type.id" x-text="type.name"></option>
+                            </template>
+                        </select>
+                    </label>
+                </div>
+            </div>
 
-        <label>
-            Класс очистки:
-            <select x-model="cleaningClass">
-                <option value="">Выберите класс</option>
-                <template x-for="class in classes">
-                    <option :value="class.id" x-text="class.name"></option>
-                </template>
-            </select>
-        </label>
+            <div class="form-column">
+                <div class="form-group">
+                    <label>
+                        Класс очистки:
+                        <select x-model="cleaningClass" required>
+                            <option value="">Выберите класс</option>
+                            <template x-for="class in classes">
+                                <option :value="class.id" x-text="class.name"></option>
+                            </template>
+                        </select>
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-column">
+                <div class="form-group">
+                    <label>
+                        Количество фильтров:
+                        <input type="number" x-model.number="numberOfFilters" required min="1">
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Вторая строка -->
+        <div class="form-grid">
+            <div class="form-column">
+                <div class="form-group">
+                    <label>
+                        Количество карманов:
+                        <input type="number" x-model.number="numberOfPockets" required min="1">
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-column">
+                <div class="form-group">
+                    <label>
+                        Коэффициент:
+                        <input type="number" x-model.number="coefficient" required min="0" step="0.1">
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-column">
+                <div class="form-group">
+                    <label>
+                        Наличие уплотнителя:
+                        <select x-model="sealer">
+                            <option value="false">Нет</option>
+                            <option value="true">Да</option>
+                        </select>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Третья строка - размеры -->
+        <div class="dimensions-group">
+            <label>
+                Ширина (мм):
+                <input type="number" x-model.number="width" required min="1">
+            </label>
+            <label>
+                Высота (мм):
+                <input type="number" x-model.number="height" required min="1">
+            </label>
+            <label>
+                Длина кармана (мм):
+                <input type="number" x-model.number="pocketLength" required min="1">
+            </label>
+        </div>
+
+        <!-- Комментарий на всю ширину -->
+        <div class="full-width-group">
+            <label>
+                Комментарий:
+                <textarea x-model="comment" rows="2"></textarea>
+            </label>
+        </div>
+
+        <button type="submit" class="primary">Рассчитать</button>
     </form>
 
+    <!-- Результаты расчета -->
+    <article>
+        <header>Результаты расчета</header>
+        <div class="grid">
+            <div>
+                <strong>Цена без коэффициента:</strong>
+                <span x-text="priceWithoutCoefficient"></span>
+            </div>
+            <div>
+                <strong>Сумма без коэффициента:</strong>
+                <span x-text="sumWithoutCoefficient"></span>
+            </div>
+            <div>
+                <strong>Цена с коэффициентом:</strong>
+                <span x-text="priceWithCoefficient"></span>
+            </div>
+            <div>
+                <strong>Сумма с коэффициентом:</strong>
+                <span x-text="sumWithCoefficient"></span>
+            </div>
+        </div>
+    </article>
 </div>
+
+<style>
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.dimensions-group {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.full-width-group {
+    margin-bottom: 1rem;
+}
+
+.full-width-group textarea {
+    width: 100%;
+}
+</style>
 {{end}}
