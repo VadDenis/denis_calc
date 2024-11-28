@@ -17,7 +17,8 @@
       this.items = [];
       const collection = this.activeTable === 'cleaning' ? 'filter_cleaning_class' :
                         this.activeTable === 'types' ? 'filter_type' :
-                        this.activeTable === 'materials' ? 'materials' : 'filters';
+                        this.activeTable === 'materials' ? 'materials' :
+                        this.activeTable === 'third_party' ? 'third_party_products' : 'filters';
       const response = await fetch(`/api/collections/${collection}/records`);
       const data = await response.json();
       this.items = data.items;
@@ -45,7 +46,8 @@
     try {
       const collection = this.activeTable === 'cleaning' ? 'filter_cleaning_class' :
                         this.activeTable === 'types' ? 'filter_type' :
-                        this.activeTable === 'materials' ? 'materials' : 'filters';
+                        this.activeTable === 'materials' ? 'materials' :
+                        this.activeTable === 'third_party' ? 'third_party_products' : 'filters';
       
       if (!this.formData.name) {
         throw new Error('Название не может быть пустым');
@@ -91,7 +93,8 @@
       // Определяем коллекцию
       const collection = this.activeTable === 'cleaning' ? 'filter_cleaning_class' :
                         this.activeTable === 'types' ? 'filter_type' :
-                        this.activeTable === 'materials' ? 'materials' : 'filters';
+                        this.activeTable === 'materials' ? 'materials' :
+                        this.activeTable === 'third_party' ? 'third_party_products' : 'filters';
       
       if (!this.editData.id || !this.editData.name) {
         throw new Error('Некорректные данные для обновления');
@@ -123,7 +126,8 @@
     try {
       const collection = this.activeTable === 'cleaning' ? 'filter_cleaning_class' :
                         this.activeTable === 'types' ? 'filter_type' :
-                        this.activeTable === 'materials' ? 'materials' : 'filters';
+                        this.activeTable === 'materials' ? 'materials' :
+                        this.activeTable === 'third_party' ? 'third_party_products' : 'filters';
       
       const response = await fetch(`/api/collections/${collection}/records/${id}`, {
         method: 'DELETE'
@@ -165,6 +169,12 @@
     >
       Материалы для производства
     </button>
+    <button 
+      :class="{ 'active': activeTable === 'third_party' }"
+      @click="switchTab('third_party')"
+    >
+      Сторонняя продукция
+    </button>
   </div>
 
   <!-- Таблица классов очистки -->
@@ -198,45 +208,13 @@
       </tbody>
     </table>
 
-    <button class="primary" @click="showAddForm = true">Добавить класс очистки</button>
+    <button class="primary" @click="showAddForm = true" x-text="'Добавить ' + (
+      activeTable === 'cleaning' ? 'класс очистки' :
+      activeTable === 'types' ? 'тип фильтра' :
+      activeTable === 'materials' ? 'материал' :
+      activeTable === 'third_party' ? 'стороннюю продукцию' : 'фильтр'
+    )"></button>
 
-    <!-- Модальное окно добавления класса очистки -->
-    <dialog :open="showAddForm">
-      <article>
-        <header>
-          <h3>Добавление класса очистки</h3>
-        </header>
-        <form @submit.prevent="addItem">
-          <label>
-            класс очистки
-            <input type="text" x-model="formData.name" required>
-          </label>
-          <footer style="display: flex; flex-direction: column; gap: 0.5rem;">
-            <button type="submit" style="width: 100%;">Добавить</button>
-            <button type="button" class="secondary" @click="showAddForm = false" style="width: 100%;">Отмена</button>
-          </footer>
-        </form>
-      </article>
-    </dialog>
-
-    <!-- Модальное окно редактирования класса очистки -->
-    <dialog :open="showEditForm">
-      <article>
-        <header>
-          <h3>Редактирование класса очистки</h3>
-        </header>
-        <form @submit.prevent="updateItem">
-          <label>
-            Класс очистки
-            <input type="text" x-model="formData.name" required>
-          </label>
-          <footer style="display: flex; flex-direction: column; gap: 0.5rem;">
-            <button type="submit" style="width: 100%;">Изменить</button>
-            <button type="button" class="secondary" @click="showEditForm = false" style="width: 100%;">Отмена</button>
-          </footer>
-        </form>
-      </article>
-    </dialog>
   </div>
 
   <!-- Таблица типов фильтров -->
@@ -329,45 +307,13 @@
         </tbody>
       </table>
 
-      <button class="primary" @click="showAddForm = true">Добавить тип фильтра</button>
+      <button class="primary" @click="showAddForm = true" x-text="'Добавить ' + (
+        activeTable === 'cleaning' ? 'класс очистки' :
+        activeTable === 'types' ? 'тип фильтра' :
+        activeTable === 'materials' ? 'материал' :
+        activeTable === 'third_party' ? 'стороннюю продукцию' : 'фильтр'
+      )"></button>
 
-      <!-- Модальное окно добавления типа фильтров -->
-      <dialog :open="showAddForm">
-        <article>
-          <header>
-            <h3>Добавить тип фильтра</h3>
-          </header>
-          <form @submit.prevent="addItem">
-            <label>
-              Тип фильтра
-              <input type="text" x-model="formData.name" required>
-            </label>
-            <footer style="display: flex; flex-direction: column; gap: 0.5rem;">
-              <button type="submit" style="width: 100%;">Добавить</button>
-              <button type="button" class="secondary" @click="showAddForm = false" style="width: 100%;">Отмена</button>
-            </footer>
-          </form>
-        </article>
-      </dialog>
-
-      <!-- Модальное окно редактирования типа фильтра -->
-      <dialog :open="showEditForm">
-        <article>
-          <header>
-            <h3>Изменения типа фильтра</h3>
-          </header>
-          <form @submit.prevent="updateItem">
-            <label>
-              Тип фильтра
-              <input type="text" x-model="editData.name" required>
-            </label>
-            <footer style="display: flex; flex-direction: column; gap: 0.5rem;">
-              <button type="submit" style="width: 100%;">Изменить</button>
-              <button type="button" class="secondary" @click="showEditForm = false" style="width: 100%;">Отмена</button>
-            </footer>
-          </form>
-        </article>
-      </dialog>
     </div>
   </div>
 
@@ -402,45 +348,13 @@
         </tbody>
     </table>
 
-    <button class="primary" @click="showAddForm = true">Добавить материал</button>
+    <button class="primary" @click="showAddForm = true" x-text="'Добавить ' + (
+      activeTable === 'cleaning' ? 'класс очистки' :
+      activeTable === 'types' ? 'тип фильтра' :
+      activeTable === 'materials' ? 'материал' :
+      activeTable === 'third_party' ? 'стороннюю продукцию' : 'фильтр'
+    )"></button>
 
-    <!-- Модальное окно добавления материала -->
-    <dialog :open="showAddForm">
-        <article>
-            <header>
-                <h3>Добавить материал</h3>
-            </header>
-            <form @submit.prevent="addItem">
-                <label>
-                    Название
-                    <input type="text" x-model="formData.name" required>
-                </label>
-                <footer style="display: flex; flex-direction: column; gap: 0.5rem;">
-                    <button type="submit" style="width: 100%;">Добавить</button>
-                    <button type="button" class="secondary" @click="showAddForm = false" style="width: 100%;">Отмена</button>
-                </footer>
-            </form>
-        </article>
-    </dialog>
-
-    <!-- Модальное окно редактирования материала -->
-    <dialog :open="showEditForm">
-        <article>
-            <header>
-                <h3>Изменить материал</h3>
-            </header>
-            <form @submit.prevent="updateItem">
-                <label>
-                    Название
-                    <input type="text" x-model="editData.name" required>
-                </label>
-                <footer style="display: flex; flex-direction: column; gap: 0.5rem;">
-                    <button type="submit" style="width: 100%;">Сохранить</button>
-                    <button type="button" class="secondary" @click="showEditForm = false" style="width: 100%;">Отмена</button>
-                </footer>
-            </form>
-        </article>
-    </dialog>
   </div>
 
   <!-- Добавляем таблицу фильтров -->
@@ -471,33 +385,61 @@
       </tbody>
     </table>
   
-    <button class="primary" @click="showAddForm = true">Добавить фильтр</button>
+    <button class="primary" @click="showAddForm = true" x-text="'Добавить ' + (
+      activeTable === 'cleaning' ? 'класс очистки' :
+      activeTable === 'types' ? 'тип фильтра' :
+      activeTable === 'materials' ? 'материал' :
+      activeTable === 'third_party' ? 'стороннюю продукцию' : 'фильтр'
+    )"></button>
 
-    <!-- Модальное окно добавления для фильтров -->
-    <dialog :open="showAddForm">
-      <article>
-        <header>
-          <h3>Добавить фильтр</h3>
-        </header>
-        <form @submit.prevent="addItem">
-          <label>
-            Название
-            <input type="text" x-model="formData.name" required>
-          </label>
-          <footer style="display: flex; flex-direction: column; gap: 0.5rem;">
-            <button type="submit" style="width: 100%;">Добавить</button>
-            <button type="button" class="secondary" @click="showAddForm = false" style="width: 100%;">Отмена</button>
-          </footer>
-        </form>
-      </article>
-    </dialog>
+  </div>
+
+  <!-- Добавляем таблицу сторонней продукции -->
+  <div x-show="activeTable === 'third_party'">
+    <h2>Сторонняя продукция</h2>
+    
+    <table role="grid">
+      <thead>
+        <tr>
+          <th>Название</th>
+          <th>Создано</th>
+          <th>Обновлено</th>
+          <th>Действия</th>
+        </tr>
+      </thead>
+      <tbody>
+        <template x-for="item in items" :key="item.id">
+          <tr>
+            <td x-text="item.name"></td>
+            <td x-text="new Date(item.created).toLocaleString()"></td>
+            <td x-text="new Date(item.updated).toLocaleString()"></td>
+            <td>
+              <button class="outline" @click="editItem(item)">Изменить</button>
+              <button class="outline secondary" @click="deleteItem(item.id)">Удалить</button>
+            </td>
+          </tr>
+        </template>
+      </tbody>
+    </table>
+
+    <button class="primary" @click="showAddForm = true" x-text="'Добавить ' + (
+      activeTable === 'cleaning' ? 'класс очистки' :
+      activeTable === 'types' ? 'тип фильтра' :
+      activeTable === 'materials' ? 'материал' :
+      activeTable === 'third_party' ? 'стороннюю продукцию' : 'фильтр'
+    )"></button>
   </div>
 
   <!-- Унифицированное модальное окно редактирования -->
   <dialog :open="showEditForm">
     <article>
       <header>
-        <h3>Изменить запись</h3>
+        <h3 x-text="'Изменить ' + (
+          activeTable === 'cleaning' ? 'класс очистки' :
+          activeTable === 'types' ? 'тип фильтра' :
+          activeTable === 'materials' ? 'материал' :
+          activeTable === 'third_party' ? 'стороннюю продукцию' : 'фильтр'
+        )"></h3>
       </header>
       <form @submit.prevent="updateItem">
         <label>
@@ -507,6 +449,30 @@
         <footer style="display: flex; flex-direction: column; gap: 0.5rem;">
           <button type="submit" style="width: 100%;">Сохранить</button>
           <button type="button" class="secondary" @click="showEditForm = false" style="width: 100%;">Отмена</button>
+        </footer>
+      </form>
+    </article>
+  </dialog>
+
+  <!-- Унифицированное модальное окно добавления -->
+  <dialog :open="showAddForm">
+    <article>
+      <header>
+        <h3 x-text="'Добавить ' + (
+          activeTable === 'cleaning' ? 'класс очистки' :
+          activeTable === 'types' ? 'тип фильтра' :
+          activeTable === 'materials' ? 'материал' :
+          activeTable === 'third_party' ? 'стороннюю продукцию' : 'фильтр'
+        )"></h3>
+      </header>
+      <form @submit.prevent="addItem">
+        <label>
+          Название
+          <input type="text" x-model="formData.name" required>
+        </label>
+        <footer style="display: flex; flex-direction: column; gap: 0.5rem;">
+          <button type="submit" style="width: 100%;">Добавить</button>
+          <button type="button" class="secondary" @click="showAddForm = false" style="width: 100%;">Отмена</button>
         </footer>
       </form>
     </article>
