@@ -20,7 +20,12 @@
 
   async loadItems() {
     try {
-      const response = await fetch('/api/collections/filter_cleaning_class/records');
+      // Очищаем старые данные
+      this.items = [];
+      
+      const collection = this.activeTable === 'cleaning' ? 'filter_cleaning_class' :
+                        this.activeTable === 'types' ? 'filter_type' : 'materials';
+      const response = await fetch(`/api/collections/${collection}/records`);
       const data = await response.json();
       this.items = data.items;
     } catch (err) {
@@ -30,48 +35,84 @@
 
   async addItem() {
     try {
-      const response = await fetch('/api/collections/filter_cleaning_class/records', {
+      const collection = this.activeTable === 'cleaning' ? 'filter_cleaning_class' :
+                        this.activeTable === 'types' ? 'filter_type' : 'materials';
+      
+      const response = await fetch(`/api/collections/${collection}/records`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(this.formData)
+        body: JSON.stringify({
+          name: this.formData.name
+        })
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
       
-      if (response.ok) {
+      if (result.id) {
+        // Очищаем форму
         this.showAddForm = false;
         this.formData.name = '';
+        // Перезагружаем данные
         await this.loadItems();
+      } else {
+        throw new Error('Не удалось добавить запись');
       }
     } catch (err) {
-      alert('Ошибка при создании');
+      console.error('Ошибка при добавлении:', err);
+      alert('Ошибка при добавлении записи');
     }
   },
 
   editItem(item) {
-    this.currentItem = item;
-    this.formData.name = item.name;
-    this.showEditForm = true;
+    try {
+      // Сохраняем данные для редактирования
+      this.editData = {
+        id: item.id,
+        name: item.name
+      };
+      // Показываем форму редактирования
+      this.showEditForm = true;
+    } catch (err) {
+      console.error('Ошибка при открытии формы редактирования:', err);
+      alert('Ошибка при открытии формы редактирования');
+    }
   },
 
   async updateItem() {
     try {
-      const response = await fetch(`/api/collections/filter_cleaning_class/records/${this.currentItem.id}`, {
+      // Определяем нужную коллекцию
+      const collection = this.activeTable === 'cleaning' ? 'filter_cleaning_class' :
+                        this.activeTable === 'types' ? 'filter_type' : 'materials';
+      
+      const response = await fetch(`/api/collections/${collection}/records/${this.editData.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(this.formData)
+        body: JSON.stringify({
+          name: this.editData.name
+        })
       });
 
-      if (response.ok) {
-        this.showEditForm = false;
-        this.currentItem = null;
-        this.formData.name = '';
-        await this.loadItems();
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+
+      // Закрываем форму и очищаем данные
+      this.showEditForm = false;
+      this.editData = { id: null, name: '' };
+      
+      // Перезагружаем данные таблицы
+      await this.loadItems();
     } catch (err) {
-      alert('Ошибка при обновлении');
+      console.error('Ошибка при обновлении:', err);
+      alert('Ошибка при обновлении записи');
     }
   },
 
@@ -79,28 +120,43 @@
     if (!confirm('Удалить запись?')) return;
     
     try {
-      const response = await fetch(`/api/collections/filter_cleaning_class/records/${id}`, {
+      const collection = this.activeTable === 'cleaning' ? 'filter_cleaning_class' :
+                        this.activeTable === 'types' ? 'filter_type' : 'materials';
+      
+      const response = await fetch(`/api/collections/${collection}/records/${id}`, {
         method: 'DELETE'
       });
 
-      if (response.ok) {
-        await this.loadItems();
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+
+      await this.loadItems();
     } catch (err) {
-      alert('Ошибка при удалении');
+      console.error('Ошибка при удалении:', err);
+      alert('Ошибка при удалении записи');
     }
   },
 
-  switchTab(tabName) {
+  async switchTab(tabName) {
     this.activeTable = tabName;
-    // Обновляем URL при переключении
+    // Очищаем формы при переключении
+    this.showAddForm = false;
+    this.showEditForm = false;
+    this.formData.name = '';
+    this.editData = { id: null, name: '' };
+    
+    // Обновляем URL
     const url = new URL(window.location);
     url.searchParams.set('tab', tabName);
     history.pushState({}, '', url);
+    
+    // Загружаем данные для нового таба
+    await this.loadItems();
   }
 }" x-init="loadItems">
 
-  <!-- Навигационное меню -->
+  <!-- Обновляем навигационное меню -->
   <div class="tabs" style="margin-bottom: 2rem;">
     <button 
       :class="{ 'active': activeTable === 'cleaning' }"
@@ -113,6 +169,12 @@
       @click="switchTab('types')"
     >
       Типы фильтров
+    </button>
+    <button 
+      :class="{ 'active': activeTable === 'materials' }"
+      @click="switchTab('materials')"
+    >
+      Материалы
     </button>
   </div>
 
@@ -318,6 +380,78 @@
         </article>
       </dialog>
     </div>
+  </div>
+
+  <!-- Добавляем секцию для материалов -->
+  <div x-show="activeTable === 'materials'">
+    <h2>Материалы</h2>
+
+    <!-- Таблица данных материалов -->
+    <table role="grid">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Название</th>
+                <th>Создано</th>
+                <th>Обновлено</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            <template x-for="item in items">
+                <tr>
+                    <td x-text="item.id"></td>
+                    <td x-text="item.name"></td>
+                    <td x-text="new Date(item.created).toLocaleString()"></td>
+                    <td x-text="new Date(item.updated).toLocaleString()"></td>
+                    <td>
+                        <button class="outline" @click="editItem(item)">Изменить</button>
+                        <button class="outline secondary" @click="deleteItem(item.id)">Удалить</button>
+                    </td>
+                </tr>
+            </template>
+        </tbody>
+    </table>
+
+    <button class="primary" @click="showAddForm = true">Добавить материал</button>
+
+    <!-- Модальное окно добавления материала -->
+    <dialog :open="showAddForm">
+        <article>
+            <header>
+                <h3>Добавить материал</h3>
+            </header>
+            <form @submit.prevent="addItem">
+                <label>
+                    Название
+                    <input type="text" x-model="formData.name" required>
+                </label>
+                <footer style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <button type="submit" style="width: 100%;">Добавить</button>
+                    <button type="button" class="secondary" @click="showAddForm = false" style="width: 100%;">Отмена</button>
+                </footer>
+            </form>
+        </article>
+    </dialog>
+
+    <!-- Модальное окно редактирования материала -->
+    <dialog :open="showEditForm">
+        <article>
+            <header>
+                <h3>Изменить материал</h3>
+            </header>
+            <form @submit.prevent="updateItem">
+                <label>
+                    Название
+                    <input type="text" x-model="editData.name" required>
+                </label>
+                <footer style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <button type="submit" style="width: 100%;">Сохранить</button>
+                    <button type="button" class="secondary" @click="showEditForm = false" style="width: 100%;">Отмена</button>
+                </footer>
+            </form>
+        </article>
+    </dialog>
   </div>
 
 </div>
