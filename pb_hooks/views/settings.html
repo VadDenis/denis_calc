@@ -155,7 +155,7 @@
       :class="{ 'active': activeTable === 'cleaning' }"
       @click="switchTab('cleaning')"
     >
-      Классы очистки
+      Класс очистки
     </button>
     <button 
       :class="{ 'active': activeTable === 'types' }"
@@ -319,7 +319,7 @@
 
   <!-- Добавляем секцию для материалов -->
   <div x-show="activeTable === 'materials'">
-    <h2>Материалы</h2>
+    <h2>Материалы для производства</h2>
 
     <!-- Таблица данных материалов -->
     <table role="grid">
@@ -359,7 +359,7 @@
 
   <!-- Добавляем таблицу фильтров -->
   <div x-show="activeTable === 'filters'">
-    <h2>Фильтры</h2>
+    <h2>Готовые фильтры</h2>
     
     <table role="grid">
       <thead>
