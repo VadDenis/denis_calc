@@ -1,0 +1,577 @@
+{{define "title"}}ЭЛВЕНТ: CRM{{end}}
+
+{{define "body"}}
+<h1>CRM</h1>
+
+<div x-data="{
+  activeTable: new URLSearchParams(window.location.search).get('tab') || 'orders',
+  items: [],
+  partners: [],
+  showAddForm: false,
+  showEditForm: false,
+  formData: {
+    partners: { name: '', inn: '', description: '' },
+    contacts: { name: '', position: '', phone: '', email: '', partner: '' },
+    orders: { number: '', status: 'подготовка', partner: '' }
+  },
+  editData: {
+    partners: { id: null, name: '', inn: '', description: '' },
+    contacts: { id: null, name: '', position: '', phone: '', email: '', partner: '' },
+    orders: { id: null, number: '', status: '', partner: '' }
+  },
+
+  async loadPartners() {
+    try {
+      const response = await fetch('/api/collections/partners/records');
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const data = await response.json();
+      this.partners = data.items;
+    } catch (err) {
+      console.error('Ошибка загрузки партнеров:', err);
+    }
+  },
+
+  async loadItems() {
+    try {
+      this.items = [];
+      if (this.activeTable === 'contacts' || this.activeTable === 'orders') {
+        await this.loadPartners();
+      }
+      const response = await fetch(`/api/collections/${this.activeTable}/records`);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const data = await response.json();
+      this.items = data.items;
+    } catch (err) {
+      console.error('Ошибка загрузки:', err);
+      alert('Ошибка при загрузке данных');
+    }
+  },
+
+  async switchTab(tabName) {
+    try {
+      this.activeTable = tabName;
+      this.showAddForm = false;
+      this.showEditForm = false;
+      
+      const url = new URL(window.location);
+      url.searchParams.set('tab', tabName);
+      history.pushState({}, '', url);
+      
+      await this.loadItems();
+    } catch (err) {
+      console.error('Ошибка переключения таба:', err);
+    }
+  },
+
+  async deleteItem(id) {
+    if (!confirm('Удалить запись?')) return;
+    
+    try {
+      const response = await fetch(`/api/collections/${this.activeTable}/records/${id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Обновляем список после удаления
+      await this.loadItems();
+    } catch (err) {
+      console.error('Ошибка удаления:', err);
+      alert('Ошибка при удалении записи');
+    }
+  },
+
+  async addItem() {
+    try {
+      const data = this.formData[this.activeTable];
+      
+      const response = await fetch(`/api/collections/${this.activeTable}/records`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+      this.showAddForm = false;
+      // Очищаем форму
+      this.formData.orders = { 
+        number: '', 
+        status: 'подготовка',
+        partner: ''
+      };
+      
+      await this.loadItems();
+    } catch (err) {
+      console.error('Ошибка добавления:', err);
+      alert('Ошибка при добавлении записи');
+    }
+  },
+
+  editItem(item) {
+    this.editData[this.activeTable] = { ...item };
+    this.showEditForm = true;
+  },
+
+  async updateItem() {
+    try {
+      const data = this.editData[this.activeTable];
+      
+      const response = await fetch(`/api/collections/${this.activeTable}/records/${data.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+      this.showEditForm = false;
+      this.editData.orders = { 
+        id: null,
+        number: '',
+        status: '',
+        partner: ''
+      };
+      
+      await this.loadItems();
+    } catch (err) {
+      console.error('Ошибка обновления:', err);
+      alert('Ошибка при обновлении записи');
+    }
+  }
+}" x-init="loadItems">
+
+  <!-- Навигация -->
+  <div class="tabs" style="margin-bottom: 2rem;">
+    <button 
+      :class="{ 'active': activeTable === 'partners' }"
+      @click="switchTab('partners')"
+    >
+      Партнеры
+    </button>
+    <button 
+      :class="{ 'active': activeTable === 'contacts' }"
+      @click="switchTab('contacts')"
+    >
+      Контакты
+    </button>
+    <button 
+      :class="{ 'active': activeTable === 'orders' }"
+      @click="switchTab('orders')"
+    >
+      Заказы
+    </button>
+  </div>
+
+  <!-- Таблица партнеров -->
+  <div x-show="activeTable === 'partners'">
+    <h2>Партнеры</h2>
+    
+    <table role="grid">
+      <thead>
+        <tr>
+          <th>Название</th>
+          <th>ИНН</th>
+          <th>Действия</th>
+        </tr>
+      </thead>
+      <tbody>
+        <template x-for="item in items" :key="item.id">
+          <tr>
+            <td x-text="item.name"></td>
+            <td x-text="item.inn"></td>
+            <td>
+              <button class="outline" @click="editItem(item)">Изменить</button>
+              <button class="outline secondary" @click="deleteItem(item.id)">Удалить</button>
+            </td>
+          </tr>
+        </template>
+      </tbody>
+    </table>
+
+    <button class="primary" @click="showAddForm = true">Добавить партнера</button>
+  </div>
+
+  <!-- Таблица контактов -->
+  <div x-show="activeTable === 'contacts'">
+    <h2>Контакты</h2>
+    
+    <table role="grid">
+      <thead>
+        <tr>
+          <th>ФИО</th>
+          <th>Должность</th>
+          <th>Телефон</th>
+          <th>E-mail</th>
+          <th>Партнер</th>
+          <th>Действия</th>
+        </tr>
+      </thead>
+      <tbody>
+        <template x-for="item in items" :key="item.id">
+          <tr>
+            <td x-text="item.name"></td>
+            <td x-text="item.position"></td>
+            <td x-text="item.phone"></td>
+            <td x-text="item.email"></td>
+            <td x-text="getPartnerName(item.partner)"></td>
+            <td>
+              <button class="outline" @click="editItem(item)">Изменить</button>
+              <button class="outline secondary" @click="deleteItem(item.id)">Удалить</button>
+            </td>
+          </tr>
+        </template>
+      </tbody>
+    </table>
+
+    <button class="primary" @click="showAddForm = true">Добавить контакт</button>
+  </div>
+
+  <!-- Таблица заказов -->
+  <div x-show="activeTable === 'orders'">
+    <h2>Заказы</h2>
+    
+    <table role="grid">
+      <thead>
+        <tr>
+          <th>Номер</th>
+          <th>Партнер</th>
+          <th>Статус</th>
+          <th>Действия</th>
+        </tr>
+      </thead>
+      <tbody>
+        <template x-for="item in items" :key="item.id">
+          <tr>
+            <td x-text="item.number"></td>
+            <td x-text="getPartnerName(item.partner)"></td>
+            <td x-text="item.status"></td>
+            <td>
+              <button class="outline" @click="editItem(item)">Изменить</button>
+              <button class="outline secondary" @click="deleteItem(item.id)">Удалить</button>
+            </td>
+          </tr>
+        </template>
+      </tbody>
+    </table>
+
+    <button class="primary" @click="showAddForm = true">Добавить заказ</button>
+  </div>
+
+  <!-- Модальное окно добавления -->
+  <dialog :open="showAddForm">
+    <article>
+      <header>
+        <h3>Добавить заказ</h3>
+      </header>
+      <form @submit.prevent="addItem">
+        <label>
+          Название
+          <input type="text" x-model="formData.orders.name" required>
+        </label>
+        <label>
+          Партнер
+          <select x-model="formData.orders.partner" required>
+            <option value="">Выберите партнера</option>
+            <template x-for="partner in partners" :key="partner.id">
+              <option :value="partner.id" x-text="partner.name"></option>
+            </template>
+          </select>
+        </label>
+        <label>
+          Статус
+          <select x-model="formData.orders.status" required>
+            <option value="подготовка">Подготовка</option>
+            <option value="на рассмотрении">На рассмотрении</option>
+            <option value="одобрен">Одобрен</option>
+            <option value="отказ">Отказ</option>
+          </select>
+        </label>
+        <label>
+          Описание
+          <textarea x-model="formData.orders.description"></textarea>
+        </label>
+        <footer style="display: flex; flex-direction: column; gap: 0.5rem;">
+          <button type="submit" style="width: 100%;">Добавить</button>
+          <button type="button" class="secondary" @click="showAddForm = false" style="width: 100%;">Отмена</button>
+        </footer>
+      </form>
+    </article>
+  </dialog>
+
+  <!-- Модальное окно редактирования -->
+  <dialog :open="showEditForm">
+    <article>
+      <header>
+        <h3>Изменить заказ</h3>
+      </header>
+      <form @submit.prevent="updateItem">
+        <label>
+          Название
+          <input type="text" x-model="editData.orders.name" required>
+        </label>
+        <label>
+          Партнер
+          <select x-model="editData.orders.partner" required>
+            <option value="">Выберите партнера</option>
+            <template x-for="partner in partners" :key="partner.id">
+              <option :value="partner.id" x-text="partner.name"></option>
+            </template>
+          </select>
+        </label>
+        <label>
+          Статус
+          <select x-model="editData.orders.status" required>
+            <option value="подготовка">Подготовка</option>
+            <option value="на рассмотрении">На рассмотрении</option>
+            <option value="одобрен">Одобрен</option>
+            <option value="отказ">Отказ</option>
+          </select>
+        </label>
+        <label>
+          Описание
+          <textarea x-model="editData.orders.description"></textarea>
+        </label>
+        <footer style="display: flex; flex-direction: column; gap: 0.5rem;">
+          <button type="submit" style="width: 100%;">Сохранить</button>
+          <button type="button" class="secondary" @click="showEditForm = false" style="width: 100%;">Отмена</button>
+        </footer>
+      </form>
+    </article>
+  </dialog>
+
+  <!-- Исправляем модальные окна для разных типов -->
+
+  <!-- Модальное окно для партнеров -->
+  <dialog :open="showAddForm && activeTable === 'partners'">
+    <article>
+      <header>
+        <h3>Добавить партнера</h3>
+      </header>
+      <form @submit.prevent="addItem">
+        <label>
+          Название
+          <input type="text" x-model="formData.partners.name" required>
+        </label>
+        <label>
+          ИНН
+          <input type="number" x-model="formData.partners.inn" required>
+        </label>
+        <label>
+          Описание
+          <textarea x-model="formData.partners.description"></textarea>
+        </label>
+        <footer style="display: flex; flex-direction: column; gap: 0.5rem;">
+          <button type="submit" style="width: 100%;">Добавить</button>
+          <button type="button" class="secondary" @click="showAddForm = false" style="width: 100%;">Отмена</button>
+        </footer>
+      </form>
+    </article>
+  </dialog>
+
+  <!-- Форма добавления контакта -->
+  <dialog :open="showAddForm && activeTable === 'contacts'">
+    <article>
+      <header>
+        <h3>Добавить контакт</h3>
+      </header>
+      <form @submit.prevent="addItem">
+        <label>
+          ФИО
+          <input type="text" x-model="formData.contacts.name" required>
+        </label>
+        <label>
+          Должность
+          <input type="text" x-model="formData.contacts.position" required>
+        </label>
+        <label>
+          Телефон
+          <input type="tel" x-model="formData.contacts.phone">
+        </label>
+        <label>
+          E-mail
+          <input type="email" x-model="formData.contacts.email">
+        </label>
+        <label>
+          Партнер
+          <select x-model="formData.contacts.partner" required>
+            <option value="">Выберите партнера</option>
+            <template x-for="partner in partners" :key="partner.id">
+              <option :value="partner.id" x-text="partner.name"></option>
+            </template>
+          </select>
+        </label>
+        <footer style="display: flex; flex-direction: column; gap: 0.5rem;">
+          <button type="submit" style="width: 100%;">Добавить</button>
+          <button type="button" class="secondary" @click="showAddForm = false" style="width: 100%;">Отмена</button>
+        </footer>
+      </form>
+    </article>
+  </dialog>
+
+  <!-- Модальное окно для заказов -->
+  <dialog :open="showAddForm && activeTable === 'orders'">
+    <article>
+      <header>
+        <h3>Добавить заказ</h3>
+      </header>
+      <form @submit.prevent="addItem">
+        <label>
+          Номер
+          <input type="number" x-model="formData.orders.number" required>
+        </label>
+        <label>
+          Партнер
+          <select x-model="formData.orders.partner" required>
+            <option value="">Выберите партнера</option>
+            <template x-for="partner in partners" :key="partner.id">
+              <option :value="partner.id" x-text="partner.name"></option>
+            </template>
+          </select>
+        </label>
+        <label>
+          Статус
+          <select x-model="formData.orders.status" required>
+            <option value="подготовка">Подготовка</option>
+            <option value="на рассмотрении">На рассмотрении</option>
+            <option value="одобрен">Одобрен</option>
+            <option value="отказ">Отказ</option>
+          </select>
+        </label>
+        <footer style="display: flex; flex-direction: column; gap: 0.5rem;">
+          <button type="submit" style="width: 100%;">Добавить</button>
+          <button type="button" class="secondary" @click="showAddForm = false" style="width: 100%;">Отмена</button>
+        </footer>
+      </form>
+    </article>
+  </dialog>
+
+  <!-- Модальное окно редактирования партнера -->
+  <dialog :open="showEditForm && activeTable === 'partners'">
+    <article>
+      <header>
+        <h3>Изменить партнера</h3>
+      </header>
+      <form @submit.prevent="updateItem">
+        <label>
+          Название
+          <input type="text" x-model="editData.partners.name" required>
+        </label>
+        <label>
+          ИНН
+          <input type="number" x-model="editData.partners.inn" required>
+        </label>
+        <label>
+          Описание
+          <textarea x-model="editData.partners.description"></textarea>
+        </label>
+        <footer style="display: flex; flex-direction: column; gap: 0.5rem;">
+          <button type="submit" style="width: 100%;">Сохранить</button>
+          <button type="button" class="secondary" @click="showEditForm = false" style="width: 100%;">Отмена</button>
+        </footer>
+      </form>
+    </article>
+  </dialog>
+
+  <!-- Модальное окно редактирования контактов -->
+  <dialog :open="showEditForm && activeTable === 'contacts'">
+    <article>
+      <header>
+        <h3>Изменить контакт</h3>
+      </header>
+      <form @submit.prevent="updateItem">
+        <label>
+          ФИО
+          <input type="text" x-model="editData.contacts.name" required>
+        </label>
+        <label>
+          Должность
+          <input type="text" x-model="editData.contacts.position" required>
+        </label>
+        <label>
+          Телефон
+          <input type="tel" x-model="editData.contacts.phone">
+        </label>
+        <label>
+          E-mail
+          <input type="email" x-model="editData.contacts.email">
+        </label>
+        <label>
+          Партнер
+          <select x-model="editData.contacts.partner" required>
+            <option value="">Выберите партнера</option>
+            <template x-for="partner in partners" :key="partner.id">
+              <option :value="partner.id" x-text="partner.name"></option>
+            </template>
+          </select>
+        </label>
+        <footer style="display: flex; flex-direction: column; gap: 0.5rem;">
+          <button type="submit" style="width: 100%;">Сохранить</button>
+          <button type="button" class="secondary" @click="showEditForm = false" style="width: 100%;">Отмена</button>
+        </footer>
+      </form>
+    </article>
+  </dialog>
+
+  <!-- Модальное окно редактирования заказов -->
+  <dialog :open="showEditForm && activeTable === 'orders'">
+    <article>
+      <header>
+        <h3>Изменить заказ</h3>
+      </header>
+      <form @submit.prevent="updateItem">
+        <label>
+          Номер
+          <input type="number" x-model="editData.orders.number" required>
+        </label>
+        <label>
+          Партнер
+          <select x-model="editData.orders.partner" required>
+            <option value="">Выберите партнера</option>
+            <template x-for="partner in partners" :key="partner.id">
+              <option :value="partner.id" x-text="partner.name"></option>
+            </template>
+          </select>
+        </label>
+        <label>
+          Статус
+          <select x-model="editData.orders.status" required>
+            <option value="подготовка">Подготовка</option>
+            <option value="на рассмотрении">На рассмотрении</option>
+            <option value="одобрен">Одобрен</option>
+            <option value="отказ">Отказ</option>
+          </select>
+        </label>
+        <footer style="display: flex; flex-direction: column; gap: 0.5rem;">
+          <button type="submit" style="width: 100%;">Сохранить</button>
+          <button type="button" class="secondary" @click="showEditForm = false" style="width: 100%;">Отмена</button>
+        </footer>
+      </form>
+    </article>
+  </dialog>
+
+</div>
+
+<style>
+.tabs {
+  display: flex;
+  gap: 1rem;
+}
+
+.tabs button {
+  padding: 0.5rem 1rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.tabs button.active {
+  border-bottom: 2px solid var(--primary);
+  font-weight: bold;
+}
+</style>
+
+{{end}}

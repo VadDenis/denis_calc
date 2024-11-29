@@ -1,0 +1,95 @@
+1. Мы будем создавать меню для вывода таблиц с основными методами CRUD (Create, Read, Update, Delete).
+и кнопками, которые будут выполнять эти методы, как это сделано в файле settings.html.
+Таблицы для которых надо создать меню:
+{
+  "page": 1,
+  "perPage": 30,
+  "totalPages": 1,
+  "totalItems": 2,
+  "items": [
+    {
+      "id": "RECORD_ID",
+      "collectionId": "nsjxzwaxieweit4",
+      "collectionName": "partners",
+      "created": "2022-01-01 01:00:00.123Z",
+      "updated": "2022-01-01 23:59:59.456Z",
+      "name": "test",
+      "inn": 123,
+      "description": "test"
+    },
+    {
+      "id": "RECORD_ID",
+      "collectionId": "nsjxzwaxieweit4",
+      "collectionName": "partners",
+      "created": "2022-01-01 01:00:00.123Z",
+      "updated": "2022-01-01 23:59:59.456Z",
+      "name": "test",
+      "inn": 123,
+      "description": "test"
+    }
+  ]
+}
+
+{
+  "page": 1,
+  "perPage": 30,
+  "totalPages": 1,
+  "totalItems": 2,
+  "items": [
+    {
+      "id": "RECORD_ID",
+      "collectionId": "ksrfv0ry5x0u9qk",
+      "collectionName": "contacts",
+      "created": "2022-01-01 01:00:00.123Z",
+      "updated": "2022-01-01 23:59:59.456Z",
+      "name": "test",
+      "position": "test",
+      "phone": "test",
+      "mail": "test@example.com",
+      "description": "test",
+      "partner": "RELATION_RECORD_ID"
+    },
+    {
+      "id": "RECORD_ID",
+      "collectionId": "ksrfv0ry5x0u9qk",
+      "collectionName": "contacts",
+      "created": "2022-01-01 01:00:00.123Z",
+      "updated": "2022-01-01 23:59:59.456Z",
+      "name": "test",
+      "position": "test",
+      "phone": "test",
+      "mail": "test@example.com",
+      "description": "test",
+      "partner": "RELATION_RECORD_ID"
+    }
+  ]
+}
+
+{
+  "page": 1,
+  "perPage": 30,
+  "totalPages": 1,
+  "totalItems": 2,
+  "items": [
+    {
+      "id": "RECORD_ID",
+      "collectionId": "bkjj05twfxf4qmp",
+      "collectionName": "orders",
+      "created": "2022-01-01 01:00:00.123Z",
+      "updated": "2022-01-01 23:59:59.456Z",
+      "number": 123,
+      "partner": "RELATION_RECORD_ID",
+      "status": "подготовка"
+    },
+    {
+      "id": "RECORD_ID",
+      "collectionId": "bkjj05twfxf4qmp",
+      "collectionName": "orders",
+      "created": "2022-01-01 01:00:00.123Z",
+      "updated": "2022-01-01 23:59:59.456Z",
+      "number": 123,
+      "partner": "RELATION_RECORD_ID",
+      "status": "подготовка"
+    }
+  ]
+}
